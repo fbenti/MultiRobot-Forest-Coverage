@@ -17,7 +17,6 @@ def noConflictPairs(pairs):
             p1 = pairs[i][j][0]
             p2 = pairs[i][j][1]
             pairedDist += manhattan(p1,p2)
-        print(pairedDist)
         if pairedDist < minD:
             minD = pairedDist
             bestIdx = i
@@ -45,7 +44,7 @@ class Param:
         # Global variable
         mat_variables = loadmat(fileName)
         self.map = mat_variables['map']
-        self.numDrones = mat_variables['numRobots'][0][0]
+        self.numDrones = int(mat_variables['numRobots'][0][0])
         self.routes = [Route(i,mat_variables['routes'][0][i]) for i in range(self.numDrones)]
         self.maxLength = self.findMaxLength()
         # self.roots = [i[0].tolist() for i in mat_variables['R4'][0]]

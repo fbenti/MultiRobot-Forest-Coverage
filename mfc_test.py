@@ -12,10 +12,10 @@ import math, itertools, copy
 # Drone attributes
 LAND_HEIGHT         = 0.05
 LAND_DURATION       = 2
-TAKEOFF_HEIGHT      = 0.5
-TAKEOFF_DURATION    = 1+TAKEOFF_HEIGHT
-HOVER_DURATION      = 1
-DISPERSE_DURATION   = 4
+TAKEOFF_HEIGHT      = 1
+TAKEOFF_DURATION    = 3
+HOVER_DURATION      = 2
+DISPERSE_DURATION   = 8
 MOVE_DURATION       = 2
 
 
@@ -25,16 +25,19 @@ def help_takeoff(cfs, timeHelper):
         cf.takeoff(targetHeight=TAKEOFF_HEIGHT, duration=TAKEOFF_DURATION)
     timeHelper.sleep(TAKEOFF_DURATION + HOVER_DURATION)
 
+
 # Land didn't work when swarm.allcfs.land() was used
 def help_land(cfs, timeHelper):
     for cf in cfs:
         cf.land(targetHeight=LAND_HEIGHT, duration=LAND_DURATION)
     timeHelper.sleep(LAND_DURATION)
 
+
 # To stop the motors
 def help_stopSwarm(cfs):
     for cf in cfs:
         cf.cmdStop()
+
 
 def help_disperse(cfs, roots, timeHelper):
     for cf in cfs:
@@ -42,10 +45,12 @@ def help_disperse(cfs, roots, timeHelper):
         # cf.takeoff(targetHeight=TAKEOFF_HEIGHT, duration=TAKEOFF_DURATION)
         # timeHelper.sleep(TAKEOFF_DURATION + HOVER_DURATION)
         
-        pos = np.array(roots.pop())
+        pos = np.array(roots.pop()).astype(float)
         cf.pose = pos.astype(float)
 
-        cf.goTo(goal=cf.pose, yaw=0, duration=DISPERSE_DURATION*2)
+        print("\nDrone {} goint towards roots : {}".format(cf.id, pos))
+        
+        cf.goTo(goal=cf.pose, yaw=0, duration=DISPERSE_DURATION)
         timeHelper.sleep(DISPERSE_DURATION + HOVER_DURATION)
 
         # Since each drone has it own origin as its initialPosition and the goal is wrt that
@@ -56,22 +61,27 @@ def help_disperse(cfs, roots, timeHelper):
 def help_goTo(cfs, goalArr, timeHelper):
     i = 0
     for cf in cfs:
-        cf.pose = np.float(goalArr[i].astype(float))
+        cf.pose = np.array(goalArr[i]).astype(float)
+        print("\nDrone {} goint towards {}".format(cf.id, goalArr[i]))
         cf.goTo(goal=cf.pose, yaw=0, duration=MOVE_DURATION)
-    
+        i += 1
     timeHelper.sleep(MOVE_DURATION)
 
+def stopSwarm(cfs):
+    for cf in cfs:
+        cf.cmdStop()
 
 
 def main():
     '''Import Matlab workspace'''
-    fileName = "matlab_param/test_5_5.mat"
+    fileName = "matlab_param/test_5_5_2.mat"
     param = Param(fileName)
 
     ''' Read yaml file'''
     swarm = Crazyswarm()
     timeHelper = swarm.timeHelper
     allcfs = swarm.allcfs.crazyflies
+
 
     ''' Reorder route'''
     # Find best asscociation between cfs.InitialPos and Roots 
@@ -87,29 +97,43 @@ def main():
         newRoutes[i] = param.routes[index[i]]
     param.routes = copy.deepcopy(newRoutes)
 
-    '''' 1 - Takeoff '''
-    allcfs.takeoff(targetHeigth=TAKEOFF_HEIGHT, duration=TAKEOFF_DURATION)
-    timeHelper.sleep(1.5+TAKEOFF_HEIGHT)
-    
-    ''' 2 - Go To Roots '''
-    # for cf in allcfs.crazyflies:
-    #     pos = np.array(cf.initialPosition) + np.array([0, 0, TAKEOFF_HEIGHT])
-    #     cf.goTo(pos, 0, 1.0)
-    help_disperse(allcfs, param.roots, timeHelper)
+    try:
+        '''' 1 - Takeoff '''
+        #allcfs.takeoff(targetHeigth=TAKEOFF_HEIGHT, duration=TAKEOFF_DURATION)
+        #timeHelper.sleep(1.5+TAKEOFF_HEIGHT)
+        help_takeoff(allcfs,timeHelper)
 
-    ''' 3 - Follow Routes '''
-    for i in range(1,param.maxLength):
-        # goTo(self, goal, yaw, duration, groupMask = 0)
-        # goal : iterable of 3 floats
-        # allcfs.goTo(goal=goal, yaw=0, duration=MOVE_DURATION)
+        print("\n--- Takeoff completed ---")
 
-        goal = [(param.routes[cf].x[i], param.routes[cf].y[i], param.routes[cf].z[i]) for cf in range(param.numDrones)]
-        help_goTo(allcfs, goal, timeHelper)
+        ''' 2 - Go To Roots '''
+        # for cf in allcfs.crazyflies:
+        #     pos = np.array(cf.initialPosition) + np.array([0, 0, TAKEOFF_HEIGHT])
+        #     cf.goTo(pos, 0, 1.0)
+        help_disperse(allcfs, param.roots, timeHelper)
 
-    '''4 - Land '''
-    # allcfs.land(targetHeight=0.02, duration=1.0+TAKEOFF_HEIGHT)
-    help_land(allcfs, timeHelper)
-    timeHelper.sleep(1.0+TAKEOFF_HEIGHT)
+        ''' 3 - Follow Routes '''
+        for i in range(1,param.maxLength):
+            # goTo(self, goal, yaw, duration, groupMask = 0)
+            # goal : iterable of 3 floats
+            # allcfs.goTo(goal=goal, yaw=0, duration=MOVE_DURATION)
+
+            goal = [(param.routes[cf].x[i], param.routes[cf].y[i], param.routes[cf].z[i]) for cf in range(param.numDrones)]
+            help_goTo(allcfs, goal, timeHelper)
+            print("\n--- Step {} completed ---".format(i))
+
+
+        print("--- Map Completely Covered --> LANDING ---")
+        '''4 - Land '''
+        # allcfs.land(targetHeight=0.02, duration=1.0+TAKEOFF_HEIGHT)
+        help_land(allcfs, timeHelper)
+        timeHelper.sleep(1.0)
+        stopSwarm(allcfs)
+        
+    except Exception as e:
+        print(e)
+        help_land(allcfs, timeHelper)
+        timeHelper.sleep(1.0)
+        stopSwarm(allcfs)
 
 
 if __name__ == '__main__':
