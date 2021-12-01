@@ -1,5 +1,6 @@
 import numpy as np
 import math, itertools
+from scipy.io import loadmat
 
 def manhattan(p1, p2):
     ''' Manhattan distance'''
@@ -16,6 +17,7 @@ def noConflictPairs(pairs):
             p1 = pairs[i][j][0]
             p2 = pairs[i][j][1]
             pairedDist += manhattan(p1,p2)
+        print(pairedDist)
         if pairedDist < minD:
             minD = pairedDist
             bestIdx = i
@@ -34,25 +36,29 @@ class Route:
         x_list, y_list, z_list = [],[],[]
         for j in range(len(x)):
             x_list.append(x[j])
-            y_list.append(x[j])
-            z_list.append(x[j])
+            y_list.append(y[j])
+            z_list.append(z[j])
         return x_list,y_list,z_list
 
 class Param:
-    def __init__(self, mat_variables):
+    def __init__(self, fileName):
         # Global variable
+        mat_variables = loadmat(fileName)
         self.map = mat_variables['map']
-        self.numDrones = int(mat_variables['numRobots'][0][0])
-        self.roots = [i[0].tolist() for i in mat_variables['R4'][0]]
+        self.numDrones = mat_variables['numRobots'][0][0]
+        self.routes = [Route(i,mat_variables['routes'][0][i]) for i in range(self.numDrones)]
+        self.maxLength = self.findMaxLength()
+        # self.roots = [i[0].tolist() for i in mat_variables['R4'][0]]
+        self.roots = [[self.routes[i].x[0], self.routes[i].y[0], self.routes[i].z[0]] for i in range(self.numDrones)]
 
         # Technical parameters
         self.z_land = 0.2 # target for landing
         self.z_target = 1 # normal fly altitude
         self.z_offset = 0.3 # altitude offset when conflicts
-        self.routes = [Route(i,mat_variables['routes'][0][i]) for i in range(self.numDrones)]
-        self.maxLength = self.findMaxLength()
+        
+        # Solve conflicts
         self.solveConflicts()
-
+        
     def findMaxLength(self):
         ''' Find the path with maximum length '''
         temp = 0
@@ -70,6 +76,11 @@ class Param:
                 self.routes[r].y.append(self.routes[r].y[-1]) # y: append last element
                 self.routes[r].z.append(self.z_land) # z: append z land
             self.routes[r].length = self.maxLength
+
+
+
+    ''' Help function to solve pssible conflicts '''
+
 
     def checkNextXYloc(self,k,idx):
         ''' Check conflict in only in x and y -> used when we changed altitude '''
