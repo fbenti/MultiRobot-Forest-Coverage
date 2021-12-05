@@ -7,17 +7,20 @@ import numpy as np
 import math, itertools, copy
 
 
-
-
 # Drone attributes
+DISPERSE_DURATION   = 8
 LAND_HEIGHT         = 0.05
 LAND_DURATION       = 2
+HOVER_DURATION      = 2
+MOVE_DURATION       = 2
 TAKEOFF_HEIGHT      = 1
 TAKEOFF_DURATION    = 3
-HOVER_DURATION      = 2
-DISPERSE_DURATION   = 8
-MOVE_DURATION       = 2
 
+
+def help_updateMap(pos,id):
+    pos = [int(pos[0]*2-1),int(pos[1]*2-1)]
+    map[pos[0]][pos[1]] = id
+    print("\n",map,"\n")
 
 
 def help_takeoff(cfs, timeHelper):
@@ -52,20 +55,46 @@ def help_disperse(cfs, roots, timeHelper):
         
         cf.goTo(goal=cf.pose, yaw=0, duration=DISPERSE_DURATION)
         timeHelper.sleep(DISPERSE_DURATION + HOVER_DURATION)
+        help_updateMap(cf.pose,cf.id)
 
         # Since each drone has it own origin as its initialPosition and the goal is wrt that
         # cf.goTo(goal=(cf.pose-cf.initialPosition), yaw=0, duration=DISPERSE_DURATION)
         # timeHelper.sleep(DISPERSE_DURATION + HOVER_DURATION)
 
 
-def help_goTo(cfs, goalArr, timeHelper):
-    i = 0
-    for cf in cfs:
-        cf.pose = np.array(goalArr[i]).astype(float)
-        print("\nDrone {} goint towards {}".format(cf.id, goalArr[i]))
+def help_goTo(cfs,idx,timeHelper):
+    global routes, landed
+
+    listConflictID = routes.conflictXY(idx)
+    for i,cf in enumerate(cfs):
+        # If alrady landed, do nothing
+        if landed[i] == True:
+            continue
+        # If index NOT within the routes, land
+        elif not(idx < len(routes[i].x)):
+            cf.land(targetHeight=LAND_HEIGHT, duration=LAND_DURATION)
+            landed[i] = True
+            continue
+        # Otherwise, check for conflict
+        if i in listConflictID:
+            routes.insertWait(i,idx)
+            print("\nDrone {} has to wait".format(cf.id))
+            continue
+
+        goal = [(routes[i].x[idx], routes[i].y[idx], routes[i].z[idx])]
+        cf.pose = np.array(goal).astype(float)
+        print("\nDrone {} goint towards {}".format(cf.id, goal))
         cf.goTo(goal=cf.pose, yaw=0, duration=MOVE_DURATION)
-        i += 1
+        help_updateMap(cf.pose, cf.id)
+
     timeHelper.sleep(MOVE_DURATION)
+
+def stopCondition():
+    global landed
+    if False in landed:
+        return False
+    else:
+        return True
 
 def stopSwarm(cfs):
     for cf in cfs:
@@ -73,9 +102,13 @@ def stopSwarm(cfs):
 
 
 def main():
+    global map, routes, landed
     '''Import Matlab workspace'''
     fileName = "matlab_param/test_5_5_2.mat"
     param = Param(fileName)
+    map = param.map
+    routes = param.routes
+    landed = [False]*param.numDrones
 
     ''' Read yaml file'''
     swarm = Crazyswarm()
@@ -112,20 +145,16 @@ def main():
         help_disperse(allcfs, param.roots, timeHelper)
 
         ''' 3 - Follow Routes '''
-        for i in range(1,param.maxLength):
-            # goTo(self, goal, yaw, duration, groupMask = 0)
-            # goal : iterable of 3 floats
-            # allcfs.goTo(goal=goal, yaw=0, duration=MOVE_DURATION)
+        idx = 1
+        while not(stopCondition()):
+            help_goTo(allcfs, idx, timeHelper)
+            print("\n--- Step {} completed ---".format(idx))
+            idx += 1
+        print("1n--- Map Completely Covered --> LANDING ---")
 
-            goal = [(param.routes[cf].x[i], param.routes[cf].y[i], param.routes[cf].z[i]) for cf in range(param.numDrones)]
-            help_goTo(allcfs, goal, timeHelper)
-            print("\n--- Step {} completed ---".format(i))
-
-
-        print("--- Map Completely Covered --> LANDING ---")
         '''4 - Land '''
         # allcfs.land(targetHeight=0.02, duration=1.0+TAKEOFF_HEIGHT)
-        help_land(allcfs, timeHelper)
+        # help_land(allcfs, timeHelper)
         timeHelper.sleep(1.0)
         stopSwarm(allcfs)
         
@@ -134,6 +163,7 @@ def main():
         help_land(allcfs, timeHelper)
         timeHelper.sleep(1.0)
         stopSwarm(allcfs)
+        print("\n--- Coverage Completed ---")
 
 
 if __name__ == '__main__':

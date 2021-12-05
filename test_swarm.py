@@ -1,6 +1,5 @@
 """Simulation of the spiral mapping algorithm. Useful to validate the performance."""
 
-
 from math import fabs
 from pycrazyswarm import Crazyswarm
 import numpy as np
