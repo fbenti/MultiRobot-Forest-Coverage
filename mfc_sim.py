@@ -152,13 +152,14 @@ def mfc():
     help_updateMap(allcfs)
 
     ''' 3 - Follow Routes '''
-    idx = 0
+    idx = 1
     while not(stopCondition()):
         help_goTo(allcfs, idx, timeHelper)
         help_updateMap(allcfs)
         idx += 1
         print("\n--- Step {} completed ---".format(i))
-    print("\n--- Map Completely Covered --> LANDING ---")
+    print("1n--- Map Completely Covered in {} steps ---".format(idx))
+    
     
     '''4 - Land '''
     # allcfs.land(targetHeight=0.02, duration=1.0+TAKEOFF_HEIGHT)
@@ -179,3 +180,11 @@ def main():
 if __name__ == "__main__":
 
     main()
+
+
+x1 = [1.5, ]
+x2 = [2.5]
+y1 = [4.5,]
+y2 = [3.5]
+z1 = [1,1,1,1,1,1,1]
+z2 = [1,1,1,1,1,1,1]

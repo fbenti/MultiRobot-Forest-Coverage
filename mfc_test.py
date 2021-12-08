@@ -51,7 +51,7 @@ def help_disperse(cfs, roots, timeHelper):
         pos = np.array(roots.pop()).astype(float)
         cf.pose = pos.astype(float)
 
-        print("\nDrone {} goint towards roots : {}".format(cf.id, pos))
+        print("\nDrone{} goint towards roots : {}".format(cf.id, pos))
         
         cf.goTo(goal=cf.pose, yaw=0, duration=DISPERSE_DURATION)
         timeHelper.sleep(DISPERSE_DURATION + HOVER_DURATION)
@@ -78,12 +78,12 @@ def help_goTo(cfs,idx,timeHelper):
         # Otherwise, check for conflict
         if i in listConflictID:
             routes.insertWait(i,idx)
-            print("\nDrone {} has to wait".format(cf.id))
+            print("\nDrone{} has to wait".format(cf.id))
             continue
 
         goal = [(routes[i].x[idx], routes[i].y[idx], routes[i].z[idx])]
         cf.pose = np.array(goal).astype(float)
-        print("\nDrone {} goint towards {}".format(cf.id, goal))
+        print("\nDrone{} goint towards {}".format(cf.id, goal))
         cf.goTo(goal=cf.pose, yaw=0, duration=MOVE_DURATION)
         help_updateMap(cf.pose, cf.id)
 
@@ -130,6 +130,14 @@ def main():
         newRoutes[i] = param.routes[index[i]]
     param.routes = copy.deepcopy(newRoutes)
 
+
+    # x1 = [1.5, ]
+    # x2 = [2.5]
+    # y1 = [4.5,]
+    # y2 = [3.5]
+    # z1 = [1,1,1,1,1,1,1]
+    # z2 = [1,1,1,1,1,1,1]
+
     try:
         '''' 1 - Takeoff '''
         #allcfs.takeoff(targetHeigth=TAKEOFF_HEIGHT, duration=TAKEOFF_DURATION)
@@ -150,7 +158,7 @@ def main():
             help_goTo(allcfs, idx, timeHelper)
             print("\n--- Step {} completed ---".format(idx))
             idx += 1
-        print("1n--- Map Completely Covered --> LANDING ---")
+        print("1n--- Map Completely Covered in {} steps ---".format(idx))
 
         '''4 - Land '''
         # allcfs.land(targetHeight=0.02, duration=1.0+TAKEOFF_HEIGHT)
