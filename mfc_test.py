@@ -53,7 +53,7 @@ def help_disperse(cfs, roots, timeHelper):
 
         print("\nDrone{} goint towards roots : {}".format(cf.id, pos))
         
-        cf.goTo(goal=cf.pose, yaw=0, duration=DISPERSE_DURATION)
+        cf.goTo(goal=cf.pose-cf.initialPosition, yaw=0, duration=DISPERSE_DURATION)
         timeHelper.sleep(DISPERSE_DURATION + HOVER_DURATION)
         help_updateMap(cf.pose,cf.id)
 
@@ -62,10 +62,10 @@ def help_disperse(cfs, roots, timeHelper):
         # timeHelper.sleep(DISPERSE_DURATION + HOVER_DURATION)
 
 
-def help_goTo(cfs,idx,timeHelper):
+def help_goTo(cfs,idx,param,timeHelper):
     global routes, landed
-
-    listConflictID = routes.conflictXY(idx)
+    changed = False
+    listConflictID = conflictXY(routes,idx)
     for i,cf in enumerate(cfs):
         # If alrady landed, do nothing
         if landed[i] == True:
@@ -76,18 +76,22 @@ def help_goTo(cfs,idx,timeHelper):
             landed[i] = True
             continue
         # Otherwise, check for conflict
-        if i in listConflictID:
-            routes.insertWait(i,idx)
+        elif i in listConflictID:
+            routes = insertWait(routes,i,idx)
             print("\nDrone{} has to wait".format(cf.id))
             continue
 
-        goal = [(routes[i].x[idx], routes[i].y[idx], routes[i].z[idx])]
+        goal = [routes[i].x[idx], routes[i].y[idx], routes[i].z[idx]]
         cf.pose = np.array(goal).astype(float)
         print("\nDrone{} goint towards {}".format(cf.id, goal))
-        cf.goTo(goal=cf.pose, yaw=0, duration=MOVE_DURATION)
+        print(cf.pose)
+        print(cf.initialPosition)
+        print(cf.pose - cf.initialPosition)
+        cf.goTo(goal=cf.pose - cf.initialPosition, yaw=0, duration=MOVE_DURATION)
         help_updateMap(cf.pose, cf.id)
-
+        changed = True
     timeHelper.sleep(MOVE_DURATION)
+    return changed
 
 def stopCondition():
     global landed
@@ -104,14 +108,13 @@ def stopSwarm(cfs):
 def main():
     global map, routes, landed
     '''Import Matlab workspace'''
-    fileName = "matlab_param/test_5_5_2.mat"
+    fileName = "matlab_param/test_6_6_2.mat"
     param = Param(fileName)
     map = param.map
-    routes = param.routes
     landed = [False]*param.numDrones
 
     ''' Read yaml file'''
-    swarm = Crazyswarm()
+    swarm = Crazyswarm(map = map)
     timeHelper = swarm.timeHelper
     allcfs = swarm.allcfs.crazyflies
 
@@ -130,6 +133,7 @@ def main():
         newRoutes[i] = param.routes[index[i]]
     param.routes = copy.deepcopy(newRoutes)
 
+    routes = copy.deepcopy(param.routes)
 
     # x1 = [1.5, ]
     # x2 = [2.5]
@@ -155,10 +159,11 @@ def main():
         ''' 3 - Follow Routes '''
         idx = 1
         while not(stopCondition()):
-            help_goTo(allcfs, idx, timeHelper)
-            print("\n--- Step {} completed ---".format(idx))
-            idx += 1
-        print("1n--- Map Completely Covered in {} steps ---".format(idx))
+            changed = help_goTo(allcfs, idx, param, timeHelper)
+            if changed:
+                print("\n--- Step {} completed ---".format(idx))
+                idx += 1
+        print("\n--- Map Completely Covered in {} steps ---".format(idx))
 
         '''4 - Land '''
         # allcfs.land(targetHeight=0.02, duration=1.0+TAKEOFF_HEIGHT)
@@ -171,7 +176,6 @@ def main():
         help_land(allcfs, timeHelper)
         timeHelper.sleep(1.0)
         stopSwarm(allcfs)
-        print("\n--- Coverage Completed ---")
 
 
 if __name__ == '__main__':

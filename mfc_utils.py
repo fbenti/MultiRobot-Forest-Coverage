@@ -22,6 +22,38 @@ def noConflictPairs(pairs):
             bestIdx = i
     return pairs[i]
 
+''' SOLVE CONFLICTS AT RUN TIME '''
+def conflictXY(routes,idx):
+    
+    ''' Check conflict in X Y'''
+    listConflictID = []
+    listConflictPos = []
+    for i in range(len(routes)-1):
+        flag = False
+        for j in range(i+1,len(routes)):
+            if (idx < len(routes[i].x)
+                and idx < len(routes[j].x)
+                and routes[i].x[idx] == routes[j].x[idx] 
+                and routes[i].y[idx] == routes[j].y[idx]
+                and [routes[i].x[idx],routes[i].y[idx]] not in listConflictPos):
+                flag = True
+                # Insert the wait in the drones which has the shortest routes
+                if len(routes[i].x) <= len(routes[j].x):
+                    listConflictID.append(i)
+                else:
+                    listConflictID.append(j)
+        # Keep track of already seen conflict to avoid repetition
+        if flag:
+            listConflictPos.append([routes[i].x[0],routes[i].y[0]])
+    return listConflictID
+
+def insertWait(routes,i,idx):
+    ''' Wait for 1 step'''
+    routes[i].x.insert(idx, routes.x[idx-1])
+    routes[i].y.insert(idx, routes.y[idx-1])
+    routes[i].z.insert(idx, routes.z[idx-1])
+    return routes
+
 class Route:
     def __init__(self,idx,route):
         self.id = idx
@@ -81,36 +113,36 @@ class Param:
                 self.routes[r].z.append(self.z_land) # z: append z land
             self.routes[r].length = self.maxLength
 
-    ''' SOLVE CONFLICTS AT RUN TIME '''
-    def conflictXY(self,idx):
-        ''' Check conflict in X Y'''
-        listConflictID = []
-        listConflictPos = []
-        for i in range(len(self.routes)-1):
-            flag = False
-            for j in range(i+1,len(self.routes)):
-                if (idx < len(self.routes[i].x)
-                    and idx < len(self.routes[j].x)
-                    and self.routes[i].x[idx] == self.routes[j].x[idx] 
-                    and self.routes[i].y[idx] == self.routes[j].y[idx]
-                    and [self.routes[i].x[idx],self.routes[i].y[idx]] not in listConflictPos):
-                    flag = True
-                    # Insert the wait in the drones which has the shortest routes
-                    if len(self.routes[i].x) <= len(self.routes[j].x):
-                        listConflictID.append(i)
-                    else:
-                        listConflictID.append(j)
-            # Keep track of already seen conflict to avoid repetition
-            if flag:
-                listConflictPos.append([self.routes[i].x[0],self.routes[i].y[0]])
-        return listConflictID
+    # ''' SOLVE CONFLICTS AT RUN TIME '''
+    # def conflictXY(self,idx):
+    #     ''' Check conflict in X Y'''
+    #     listConflictID = []
+    #     listConflictPos = []
+    #     for i in range(len(self.routes)-1):
+    #         flag = False
+    #         for j in range(i+1,len(self.routes)):
+    #             if (idx < len(self.routes[i].x)
+    #                 and idx < len(self.routes[j].x)
+    #                 and self.routes[i].x[idx] == self.routes[j].x[idx] 
+    #                 and self.routes[i].y[idx] == self.routes[j].y[idx]
+    #                 and [self.routes[i].x[idx],self.routes[i].y[idx]] not in listConflictPos):
+    #                 flag = True
+    #                 # Insert the wait in the drones which has the shortest routes
+    #                 if len(self.routes[i].x) <= len(self.routes[j].x):
+    #                     listConflictID.append(i)
+    #                 else:
+    #                     listConflictID.append(j)
+    #         # Keep track of already seen conflict to avoid repetition
+    #         if flag:
+    #             listConflictPos.append([self.routes[i].x[0],self.routes[i].y[0]])
+    #     return listConflictID
 
-    def insertWait(self,i,idx):
-        ''' Wait for 1 step'''
-        global routes 
-        self.routes[i].x.insert(idx, self.routes.x[idx-1])
-        self.routes[i].y.insert(idx, self.routes.y[idx-1])
-        self.routes[i].z.insert(idx, self.routes.z[idx-1])
+    # def insertWait(self,i,idx):
+    #     ''' Wait for 1 step'''
+    #     global routes 
+    #     self.routes[i].x.insert(idx, self.routes.x[idx-1])
+    #     self.routes[i].y.insert(idx, self.routes.y[idx-1])
+    #     self.routes[i].z.insert(idx, self.routes.z[idx-1])
 
 
 
