@@ -172,10 +172,6 @@ def mfc():
         timeHelper.sleep(LAND_DURATION)
 
 
-
-
-    
-
 def main():
     if PRINTS:
         return mfc()

@@ -131,6 +131,8 @@ def main():
     newRoutes = copy.deepcopy(param.routes)
     for i in range(len(index)):
         newRoutes[i] = param.routes[index[i]]
+        allcfs[i] = copy.deepcopy(cfsInitPos[index[i]])
+
     param.routes = copy.deepcopy(newRoutes)
 
     routes = copy.deepcopy(param.routes)
