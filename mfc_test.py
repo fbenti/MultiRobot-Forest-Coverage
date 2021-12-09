@@ -51,7 +51,7 @@ def help_disperse(cfs, roots, timeHelper):
         pos = np.array(roots.pop()).astype(float)
         cf.pose = pos.astype(float)
 
-        print("\nDrone{} goint towards roots : {}".format(cf.id, pos))
+        print("\nDrone{} going towards roots : {}".format(cf.id, pos))
         
         cf.goTo(goal=cf.pose-cf.initialPosition, yaw=0, duration=DISPERSE_DURATION)
         timeHelper.sleep(DISPERSE_DURATION + HOVER_DURATION)
@@ -62,8 +62,8 @@ def help_disperse(cfs, roots, timeHelper):
         # timeHelper.sleep(DISPERSE_DURATION + HOVER_DURATION)
 
 
-def help_goTo(cfs,idx,param,timeHelper):
-    global routes, landed
+def help_goTo(cfs,idx,routes,timeHelper):
+    global landed
     changed = False
     listConflictID = conflictXY(routes,idx)
     for i,cf in enumerate(cfs):
@@ -84,9 +84,9 @@ def help_goTo(cfs,idx,param,timeHelper):
         goal = [routes[i].x[idx], routes[i].y[idx], routes[i].z[idx]]
         cf.pose = np.array(goal).astype(float)
         print("\nDrone{} goint towards {}".format(cf.id, goal))
-        print(cf.pose)
-        print(cf.initialPosition)
-        print(cf.pose - cf.initialPosition)
+        # print(cf.pose)
+        # print(cf.initialPosition)
+        # print(cf.pose - cf.initialPosition)
         cf.goTo(goal=cf.pose - cf.initialPosition, yaw=0, duration=MOVE_DURATION)
         help_updateMap(cf.pose, cf.id)
         changed = True
@@ -106,7 +106,7 @@ def stopSwarm(cfs):
 
 
 def main():
-    global map, routes, landed
+    global map, landed
     '''Import Matlab workspace'''
     fileName = "matlab_param/test_6_6_2.mat"
     param = Param(fileName)
@@ -131,7 +131,7 @@ def main():
     newRoutes = copy.deepcopy(param.routes)
     for i in range(len(index)):
         newRoutes[i] = param.routes[index[i]]
-        allcfs[i] = copy.deepcopy(cfsInitPos[index[i]])
+        allcfs[i].initialPosition = copy.deepcopy(cfsInitPos[index[i]])
 
     param.routes = copy.deepcopy(newRoutes)
 
@@ -144,40 +144,40 @@ def main():
     # z1 = [1,1,1,1,1,1,1]
     # z2 = [1,1,1,1,1,1,1]
 
-    try:
-        '''' 1 - Takeoff '''
-        #allcfs.takeoff(targetHeigth=TAKEOFF_HEIGHT, duration=TAKEOFF_DURATION)
-        #timeHelper.sleep(1.5+TAKEOFF_HEIGHT)
-        help_takeoff(allcfs,timeHelper)
+    # try:
+    '''' 1 - Takeoff '''
+    #allcfs.takeoff(targetHeigth=TAKEOFF_HEIGHT, duration=TAKEOFF_DURATION)
+    #timeHelper.sleep(1.5+TAKEOFF_HEIGHT)
+    help_takeoff(allcfs,timeHelper)
 
-        print("\n--- Takeoff completed ---")
+    print("\n--- Takeoff completed ---")
 
-        ''' 2 - Go To Roots '''
-        # for cf in allcfs.crazyflies:
-        #     pos = np.array(cf.initialPosition) + np.array([0, 0, TAKEOFF_HEIGHT])
-        #     cf.goTo(pos, 0, 1.0)
-        help_disperse(allcfs, param.roots, timeHelper)
+    ''' 2 - Go To Roots '''
+    # for cf in allcfs.crazyflies:
+    #     pos = np.array(cf.initialPosition) + np.array([0, 0, TAKEOFF_HEIGHT])
+    #     cf.goTo(pos, 0, 1.0)
+    help_disperse(allcfs, param.roots, timeHelper)
 
-        ''' 3 - Follow Routes '''
-        idx = 1
-        while not(stopCondition()):
-            changed = help_goTo(allcfs, idx, param, timeHelper)
-            if changed:
-                print("\n--- Step {} completed ---".format(idx))
-                idx += 1
-        print("\n--- Map Completely Covered in {} steps ---".format(idx))
+    ''' 3 - Follow Routes '''
+    idx = 1
+    while not(stopCondition()):
+        changed = help_goTo(allcfs, idx, param.routes, timeHelper)
+        if changed:
+            print("\n--- Step {} completed ---".format(idx))
+            idx += 1
+    print("\n--- Map Completely Covered in {} steps ---".format(idx))
 
-        '''4 - Land '''
-        # allcfs.land(targetHeight=0.02, duration=1.0+TAKEOFF_HEIGHT)
-        # help_land(allcfs, timeHelper)
-        timeHelper.sleep(1.0)
-        stopSwarm(allcfs)
+    '''4 - Land '''
+    # allcfs.land(targetHeight=0.02, duration=1.0+TAKEOFF_HEIGHT)
+    # help_land(allcfs, timeHelper)
+    timeHelper.sleep(1.0)
+    stopSwarm(allcfs)
         
-    except Exception as e:
-        print(e)
-        help_land(allcfs, timeHelper)
-        timeHelper.sleep(1.0)
-        stopSwarm(allcfs)
+    # except Exception as e:
+    #     print(e)
+    #     help_land(allcfs, timeHelper)
+    #     timeHelper.sleep(1.0)
+    #     stopSwarm(allcfs)
 
 
 if __name__ == '__main__':

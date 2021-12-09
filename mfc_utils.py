@@ -49,9 +49,9 @@ def conflictXY(routes,idx):
 
 def insertWait(routes,i,idx):
     ''' Wait for 1 step'''
-    routes[i].x.insert(idx, routes.x[idx-1])
-    routes[i].y.insert(idx, routes.y[idx-1])
-    routes[i].z.insert(idx, routes.z[idx-1])
+    routes[i].x.insert(idx, routes[i].x[idx-1])
+    routes[i].y.insert(idx, routes[i].y[idx-1])
+    routes[i].z.insert(idx, routes[i].z[idx-1])
     return routes
 
 class Route:

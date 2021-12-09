@@ -15,7 +15,7 @@ import math, itertools, copy
 DISPERSE_DURATION   = 1
 LAND_DURATION       = 1
 LAND_HEIGHT         = 0.2
-MOVE_DURATION       = 0.5
+MOVE_DURATION       = 1
 TAKEOFF_HEIGHT      = 1
 TAKEOFF_DURATION    = 1
 
@@ -47,20 +47,23 @@ def help_disperse(cfs, roots, timeHelper):
         pos = np.array(roots.pop()).astype(float)
         cf.pose = pos.astype(float)
         print("\nDrone {} going towards roots : {}".format(cf.id, pos))
-        help_updateMap(cf.pose,cf.id)
+        # help_updateMap(cf.pose,cf.id)
         if SIMULATION:    
             cf.goTo(goal=cf.pose, yaw=0, duration=DISPERSE_DURATION)
         else:
-            pos = help_convertPos(cf.pose)
-            cf.updatePos(pos)
+            # pos = help_convertPos(cf.pose)
+            # cf.updatePos(pos)
+            cf.updatePos(cf.pose)
         timeHelper.sleep(DISPERSE_DURATION)
-        cf.sense()
 
-def help_goTo(cfs, idx, param, timeHelper):
-    global routes, landed
+def help_goTo(cfs, idx, routes, timeHelper):
+    # global routes
+    global landed
     changed = False
     listConflictID = conflictXY(routes,idx)
     for i,cf in enumerate(cfs):
+        print(i)
+        # print(routes.x)
         # If alrady landed, do nothing
         if landed[i] == True:
             continue
@@ -72,17 +75,19 @@ def help_goTo(cfs, idx, param, timeHelper):
         # Otherwise, check for conflict
         elif i in listConflictID:
             routes = insertWait(routes,i,idx)
+            print(i)
             print("\nDrone {} has to wait".format(cf.id))
             continue
         goal = [routes[i].x[idx], routes[i].y[idx], routes[i].z[idx]]
         cf.pose = np.array(goal).astype(float)
         print("\nDrone {} goint towards {}".format(cf.id, goal))
-        help_updateMap(cf.pose,cf.id)
+        # help_updateMap(cf.pose,cf.id)
+        updateMap(cfs)
         if SIMULATION:
             cf.goTo(goal=cf.pose, yaw=0, duration=MOVE_DURATION)
         else:
             pos = help_convertPos(cf.pose)
-            cf.updatePos(pos)
+            cf.updatePos(cf.pose)
         changed = True
 
     if SIMULATION:
@@ -94,13 +99,14 @@ def help_stopSwarm(cfs):
     for cf in cfs:
         cf.cmdStop()
 
-# def help_updateMap(cfs):
-#     for cf in cfs:
-#         cf.updateMap()
+
+def updateMap(cfs):
+    for cf in cfs:
+        cf.updateMap()
 
 def help_updateMap(pos,id):
-    pos = [int(pos[0]*2-1),int(pos[1]*2-1)]
-    map[pos[0]][pos[1]] = id
+    # pos = [int(pos[0]*2-1),int(pos[1]*2-1)]
+    map[int(pos[0])][int(pos[1])] = id
     # print("\n",map,"\n")
 
 def stopCondition():
@@ -113,7 +119,7 @@ def stopCondition():
 def mfc():
     global landed, routes, map
     '''Import Matlab workspace'''
-    fileName = "matlab_param/test_12_12_3.mat"
+    fileName = "matlab_param/test_6_6_2.mat"
     param = Param(fileName)
     map = param.map
     landed = [False]*param.numDrones
@@ -124,6 +130,41 @@ def mfc():
     allcfs = swarm.allcfs.crazyflies
     getColors(allcfs)
 
+
+    # x1 = [1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0]
+    # x2 = [5.5, 5.0, 4.5, 4.0, 3.5, 3.5, 3.5, 3.0, 2.5]
+    # x3 = [3.5, 3.5, 3.5, 3.5, 3.5, 3.5, 4.0, 4.5]
+    # y1 = [3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0]
+    # y2 = [3.0, 3.0, 3.0, 3.0, 3.0, 3.5, 3.5, 3.5, 3.5]
+    # y3 = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 3.5, 3.5]
+    # z1 = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+    # z2 = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+    # z3 = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+
+    # param.routes[0].x = x1
+    # param.routes[0].y = y1
+    # param.routes[0].z = z1
+    # # param.routes[1].x = x2
+    # # param.routes[1].y = y2
+    # # param.routes[1].z = z2
+    # param.routes[1].x = x3
+    # param.routes[1].y = y3
+    # param.routes[1].z = z3
+
+    # param.roots[0] = [param.routes[0].x[0],param.routes[0].y[0], param.routes[0].z[0]]
+    # param.roots[1] = [param.routes[1].x[0],param.routes[1].y[0], param.routes[1].z[0]]
+    # param.roots[2] = [param.routes[2].x[0],param.routes[2].y[0], param.routes[2].z[0]]
+
+
+    # only for sim 
+    for i in range(param.numDrones):
+        allcfs[i].initialPosition = allcfs[i].initialPosition / 0.5
+        print(param.routes[i])
+        param.roots[i] = (np.array(param.roots[i]) / 0.5).astype(int).tolist()
+        param.roots[i][2] = 1
+        param.routes[i].x = (np.array(param.routes[i].x) / 0.5).astype(int).tolist()
+        param.routes[i].y = (np.array(param.routes[i].y) / 0.5).astype(int).tolist()
+        # param.routes[i].z = (np.array(param.routes[i].z) / 0.5).tolist() 
 
     ''' Reorder route of the crazyflies based on the initial position from yaml'''
     # Find best asscociation between cfs.InitialPos and Roots 
@@ -137,9 +178,13 @@ def mfc():
     newRoutes = copy.deepcopy(param.routes)
     for i in range(len(index)):
         newRoutes[i] = param.routes[index[i]]
+        allcfs[i].initialPosition = copy.deepcopy(cfsInitPos[index[i]])
+
     param.routes = copy.deepcopy(newRoutes)
 
     routes = copy.deepcopy(param.routes)
+
+
 
     '''' 1 - Takeoff '''
     if SIMULATION:
@@ -157,7 +202,7 @@ def mfc():
     ''' 3 - Follow Routes '''
     idx = 1
     while not(stopCondition()):
-        changed = help_goTo(allcfs, idx, param, timeHelper)
+        changed = help_goTo(allcfs, idx, param.routes, timeHelper)
         # help_updateMap(allcfs)
         if changed:
             idx += 1
